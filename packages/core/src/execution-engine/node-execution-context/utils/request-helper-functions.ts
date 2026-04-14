@@ -437,6 +437,16 @@ export async function proxyRequestToAxios(
 	axiosConfig = Object.assign(axiosConfig, await parseRequestObject(configObject, ssrfBridge));
 	throwIfDomainNotAllowed(axiosConfig, configObject.allowedDomains);
 
+	const userAgentHeader = searchForHeader(axiosConfig, 'user-agent');
+	if (!userAgentHeader) {
+		const version = process.env.N8N_VERSION;
+		const defaultUserAgent = `n8n${version ? `/${version}` : ''}`;
+		axiosConfig.headers = {
+			...axiosConfig.headers,
+			'User-Agent': process.env.N8N_USER_AGENT ?? defaultUserAgent,
+		};
+	}
+
 	try {
 		const response = await invokeAxios(axiosConfig, configObject.auth);
 		let body = response.data;
@@ -611,9 +621,11 @@ export function convertN8nRequestToAxios(
 	// If key exists, then the user has set both accept
 	// header and the json flag. Header should take precedence.
 	if (!userAgentHeader) {
+		const version = process.env.N8N_VERSION;
+		const defaultUserAgent = `n8n${version ? `/${version}` : ''}`;
 		axiosRequest.headers = {
 			...axiosRequest.headers,
-			'User-Agent': 'n8n',
+			'User-Agent': process.env.N8N_USER_AGENT ?? defaultUserAgent,
 		};
 	}
 
